@@ -12,7 +12,7 @@ GAMMA = 0.0665  # Psychrometric constant
 # File paths
 epw_file = 'weather.epw'
 props_csv = 'plant_properties.csv'
-config_file = 'plant_config.yaml'
+config_file = 'config.yaml'
 output_excel = 'et_hourly_results.xlsx'
 
 # Load weather data
@@ -30,7 +30,8 @@ plants_config = []
 for plant in config['plants']:
     row = props_df.loc[props_df['Plant Type'] == plant['type']]
     if row.empty:
-        raise ValueError(f"Plant type {plant['type']} not found in plant_properties.csv")
+        available_types = props_df['Plant Type'].unique()
+        raise ValueError(f"Plant type '{plant['type']}' not found in plant_properties.csv. Available types: {', '.join(available_types)}")
     props = row.iloc[0]
     plants_config.append({
         'type': plant['type'],
@@ -49,7 +50,20 @@ def delta_vapour_pressure(T):
     es = saturation_vapour_pressure(T)
     return 4098 * es / (T + 237.3)**2
 
-def calculate_et0(row):
+def calculate_et0(row: pd.Series) -> float:
+    """
+    Calculate reference evapotranspiration (ET0) using the FAO Penman-Monteith equation.
+    
+    Reference: Allen, R.G., Pereira, L.S., Raes, D., Smith, M., 1998.
+    Crop Evapotranspiration - Guidelines for Computing Crop Water Requirements.
+    FAO Irrigation and Drainage Paper 56, Rome, Italy.
+    
+    Args:
+        row: Pandas Series containing weather data (T, u2, RH, GHI)
+        
+    Returns:
+        Hourly reference evapotranspiration in mm
+    """
     T, u2, RH, GHI = row['T'], row['u2'], row['RH'], row['GHI']
     es = saturation_vapour_pressure(T)
     ea = es * RH / 100
@@ -58,12 +72,29 @@ def calculate_et0(row):
     et0 = ((0.408 * delta * Rn) + (GAMMA * (900 / (T + 273)) * u2 * (es - ea))) / (delta + GAMMA * (1 + 0.34 * u2))
     return max(et0, 0)
 
+def xl_col_letter(col_name):
+    """Convert column name to Excel column letter."""
+    import string
+    if col_name in weather_df.columns:
+        col_num = weather_df.columns.get_loc(col_name) + 1
+        col_letter = ''
+        while col_num > 0:
+            col_num, remainder = divmod(col_num - 1, 26)
+            col_letter = string.ascii_uppercase[remainder] + col_letter
+        return col_letter
+    else:
+        raise ValueError(f"Column {col_name} not found in DataFrame")
+
 # Calculate ET0
 weather_df['ET0_mm'] = weather_df.apply(calculate_et0, axis=1)
 
 # Initialise total ET actual
 total_et_actual = np.zeros(len(weather_df))
-writer = ExcelWriter(output_excel, engine='xlsxwriter')
+try:
+    writer = ExcelWriter(output_excel, engine='xlsxwriter')
+except Exception as e:
+    print(f"Error creating Excel file: {e}")
+    raise
 
 # Simulate each plant
 for plant in plants_config:
@@ -89,7 +120,12 @@ for plant in plants_config:
             Ks = (theta - theta_wp) / (theta_fc - theta_wp)
         
         ET_actual_mm = Ks * kc * ET0_mm
-        theta += (P - ET_actual_mm / 1000) / root_depth
+        # Calculate infiltration with simple rainfall intensity threshold
+        P_infiltration = P
+        if P * 1000 > 20:  # If precipitation > 20mm, assume partial runoff
+            P_infiltration = min(P, 20/1000 + (P - 20/1000) * 0.7)  # 70% of rainfall above 20mm becomes runoff
+            
+        theta += (P_infiltration - ET_actual_mm / 1000) / root_depth
         theta = min(max(theta, theta_wp), theta_fc)
         
         cooling = ET_actual_mm * area * LAMBDA * MJ_TO_KWH / 1000
@@ -118,18 +154,16 @@ chart = workbook.add_chart({'type': 'line'})
 
 for plant in plants_config:
     plant_type = plant['type']
-    col = weather_df.columns.get_loc(f'ET_actual_{plant_type}')
     chart.add_series({
         'name': f'ET_actual_{plant_type}',
         'categories': ['ET Results', 1, 0, len(weather_df), 0],
-        'values':     ['ET Results', 1, col, len(weather_df), col],
+        'values':     f'=ET Results!${xl_col_letter(f"ET_actual_{plant_type}")}$2:${xl_col_letter(f"ET_actual_{plant_type}")}${len(weather_df)+1}',
     })
 
-col_total = weather_df.columns.get_loc('ET_actual_total')
 chart.add_series({
     'name': 'ET_actual_total',
     'categories': ['ET Results', 1, 0, len(weather_df), 0],
-    'values':     ['ET Results', 1, col_total, len(weather_df), col_total],
+    'values':     f'=ET Results!${xl_col_letter("ET_actual_total")}$2:${xl_col_letter("ET_actual_total")}${len(weather_df)+1}',
     'line': {'width': 2.25, 'dash_type': 'solid', 'color': 'black'}
 })
 
