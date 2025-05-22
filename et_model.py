@@ -48,13 +48,13 @@ for plant in config['plants']:
 # Helper functions
 def saturation_vapour_pressure(T):
     """
-    Calculates the saturation vapor pressure at a given temperature.
+    Calculates the saturation vapor pressure for a given air temperature.
     
     Args:
         T: Air temperature in degrees Celsius.
     
     Returns:
-        Saturation vapor pressure in kilopascals (kPa).
+        The saturation vapor pressure in kilopascals (kPa).
     """
     return 0.6108 * np.exp((17.27 * T) / (T + 237.3))
 
@@ -66,24 +66,20 @@ def delta_vapour_pressure(T):
         T: Air temperature in degrees Celsius.
     
     Returns:
-        The slope of the saturation vapor pressure curve (kPa/°C) at temperature T.
+        The slope of the saturation vapor pressure curve in kPa/°C at temperature T.
     """
     es = saturation_vapour_pressure(T)
     return 4098 * es / (T + 237.3)**2
 
 def calculate_et0(row: pd.Series) -> float:
     """
-    Calculate reference evapotranspiration (ET0) using the FAO Penman-Monteith equation.
-    
-    Reference: Allen, R.G., Pereira, L.S., Raes, D., Smith, M., 1998.
-    Crop Evapotranspiration - Guidelines for Computing Crop Water Requirements.
-    FAO Irrigation and Drainage Paper 56, Rome, Italy.
+    Calculates hourly reference evapotranspiration (ET0) in millimeters using the FAO Penman-Monteith equation.
     
     Args:
-        row: Pandas Series containing weather data (T, u2, RH, GHI)
-        
+        row: A pandas Series containing weather data with keys 'T' (temperature in °C), 'u2' (wind speed in m/s), 'RH' (relative humidity in %), and 'GHI' (global horizontal irradiance in W/m²).
+    
     Returns:
-        Hourly reference evapotranspiration in mm
+        The computed hourly reference evapotranspiration (ET0) in millimeters. The value is non-negative.
     """
     T, u2, RH, GHI = row['T'], row['u2'], row['RH'], row['GHI']
     es = saturation_vapour_pressure(T)
@@ -94,7 +90,18 @@ def calculate_et0(row: pd.Series) -> float:
     return max(et0, 0)
 
 def xl_col_letter(col_name):
-    """Convert column name to Excel column letter."""
+    """
+    Returns the Excel column letter corresponding to a DataFrame column name.
+    
+    Args:
+        col_name: The name of the column to convert.
+    
+    Returns:
+        The Excel-style column letter (e.g., 'A', 'B', ..., 'AA') for the specified column.
+    
+    Raises:
+        ValueError: If the column name is not found in the DataFrame.
+    """
     import string
     if col_name in weather_df.columns:
         col_num = weather_df.columns.get_loc(col_name) + 1
