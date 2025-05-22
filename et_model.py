@@ -179,10 +179,14 @@ for plant in plants_config:
 weather_df['ET_actual_total'] = total_et_actual
 
 # Save and chart
-weather_df.to_excel(writer, sheet_name='ET Results', index=False)
-workbook = writer.book
-worksheet = writer.sheets['ET Results']
-chart = workbook.add_chart({'type': 'line'})
+try:
+    weather_df.to_excel(writer, sheet_name='ET Results', index=False)
+    workbook = writer.book
+    worksheet = writer.sheets['ET Results']
+    chart = workbook.add_chart({'type': 'line'})
+except Exception as e:
+    print(f"Error creating Excel worksheet or chart: {e}")
+    raise
 
 for plant in plants_config:
     plant_type = plant['type']
