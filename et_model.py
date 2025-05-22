@@ -18,7 +18,7 @@ output_excel = 'et_hourly_results.xlsx'
 # Load weather data
 try:
     epw_data, _ = read_epw(epw_file)
-    weather_df = epw_data[['temp_air', 'wind_speed', 'relative_humidity', 'ghi', 'precipitation']].copy()
+    weather_df = epw_data[['temp_air', 'wind_speed', 'relative_humidity', 'ghi', 'Liquid Precipitation Depth']].copy()
     weather_df.columns = ['T', 'u2', 'RH', 'GHI', 'Precip_mm']
 except Exception as e:
     print(f"Error loading weather data from {epw_file}: {e}")
