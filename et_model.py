@@ -16,10 +16,13 @@ config_file = 'config.yaml'
 output_excel = 'et_hourly_results.xlsx'
 
 # Load weather data
-epw_data, _ = read_epw(epw_file)
-weather_df = epw_data[['temp_air', 'wind_speed', 'relative_humidity', 'ghi', 'precipitation']].copy()
-weather_df.columns = ['T', 'u2', 'RH', 'GHI', 'Precip_mm']
-
+try:
+    epw_data, _ = read_epw(epw_file)
+    weather_df = epw_data[['temp_air', 'wind_speed', 'relative_humidity', 'ghi', 'precipitation']].copy()
+    weather_df.columns = ['T', 'u2', 'RH', 'GHI', 'Precip_mm']
+except Exception as e:
+    print(f"Error loading weather data from {epw_file}: {e}")
+    raise
 # Load plant data
 props_df = pd.read_csv(props_csv)
 with open(config_file, 'r') as f:
