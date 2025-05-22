@@ -44,9 +44,27 @@ for plant in config['plants']:
 
 # Helper functions
 def saturation_vapour_pressure(T):
+    """
+    Calculates the saturation vapor pressure at a given temperature.
+    
+    Args:
+        T: Air temperature in degrees Celsius.
+    
+    Returns:
+        Saturation vapor pressure in kilopascals (kPa).
+    """
     return 0.6108 * np.exp((17.27 * T) / (T + 237.3))
 
 def delta_vapour_pressure(T):
+    """
+    Calculates the slope of the saturation vapor pressure curve at a given temperature.
+    
+    Args:
+        T: Air temperature in degrees Celsius.
+    
+    Returns:
+        The slope of the saturation vapor pressure curve (kPa/°C) at temperature T.
+    """
     es = saturation_vapour_pressure(T)
     return 4098 * es / (T + 237.3)**2
 
