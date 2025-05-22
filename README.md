@@ -3,6 +3,7 @@ EvapoTranspiration Cooling Effect Model
 
 ------
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/adamrees89/ETModel?utm_source=oss&utm_medium=github&utm_campaign=adamrees89%2FETModel&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+[![Coverage Status](https://coveralls.io/repos/github/adamrees89/ETModel/badge.svg?branch=main)](https://coveralls.io/github/adamrees89/ETModel?branch=main)
 ------
 ![GitHub](https://img.shields.io/github/license/adamrees89/ETModel.svg)
 ![GitHub repo size in bytes](https://img.shields.io/github/repo-size/adamrees89/ETModel.svg)
