@@ -123,6 +123,20 @@ for plant in plants_config:
     theta_wp = plant['wilting_point']
     theta_fc = plant['field_capacity']
     
+    # Validate parameters
+    if area <= 0:
+        raise ValueError(f"Plant area must be positive, got {area} for {plant_type}")
+    if root_depth <= 0:
+        raise ValueError(f"Root depth must be positive, got {root_depth} for {plant_type}")
+    if not 0 <= theta_wp < theta_fc <= 1:
+        raise ValueError(
+            f"Invalid soil parameters: wilting point ({theta_wp}) must be "
+            f"less than field capacity ({theta_fc}) and both must be between 0 and 1 for {plant_type}"
+        )
+    if kc <= 0:
+        raise ValueError(f"Crop coefficient must be positive, got {kc} for {plant_type}")
+    
+    # ... rest of simulation logic ...
     theta = theta_fc
     thetas, kss, et_actuals, cooling_kWh = [], [], [], []
     
